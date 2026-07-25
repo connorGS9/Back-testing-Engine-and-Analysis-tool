@@ -1,0 +1,9 @@
+From /engine
+
+1. cmake -B build
+
+2. cmake --build build 
+
+3. ./build/engine
+
+Must rebuild (2 and 3) upon every code change 
