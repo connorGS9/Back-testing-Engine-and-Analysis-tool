@@ -4,6 +4,7 @@
 #include "PriceSeries.h"
 #include <stdexcept>
 
+
 PriceSeries loadCsv(const std::string& path) {
     //Read from file, skip header row, split fields by commas, fill each vector (long date, double: open, high, low, close, long volume) parsing from string
    PriceSeries series;
@@ -31,5 +32,5 @@ PriceSeries loadCsv(const std::string& path) {
     }
 
     return series;
-
 }
+
