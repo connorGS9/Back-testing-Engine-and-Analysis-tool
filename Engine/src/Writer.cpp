@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <string>
 #include <iomanip>
+#include "EquityCurve.h"
 
 void writeCsv(const EquityCurve& eq, const std::string& path) {
     std::ofstream file(path);

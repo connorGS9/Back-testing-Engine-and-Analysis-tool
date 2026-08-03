@@ -1,6 +1,7 @@
 #include <vector>
 #include <string>
 #include "Simulator.h"
+#include "EquityCurve.h"
 
 EquityCurve simulate(const PriceSeries& series) {
     Portfolio p { 0.0, 100000.0 };
