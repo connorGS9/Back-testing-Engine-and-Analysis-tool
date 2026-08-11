@@ -58,7 +58,7 @@ double volatility(const EquityCurve& ec) {
 
 double sharpe(const EquityCurve& ec) {
     // Sharpe returns annualReturn / volatility "How much return per unit of risk taken"
-    const double RISK_FREE = 0.04; // 4% return on something very safe like short term t-bills, used to make the sharpe evaluation more realistic if we returned 26% annualy, we could have gotten 4% "risk free" so we really mesure the return to be 22%
+    constexpr double RISK_FREE = 0.04; // 4% return on something very safe like short term t-bills, used to make the sharpe evaluation more realistic if we returned 26% annualy, we could have gotten 4% "risk free" so we really mesure the return to be 22%
     const double AR = annualizedReturn(ec);
     const double ANNVOL = volatility(ec) * std::sqrt(252.0); // Daily volatility * sqrt(# tradingDays) = annual volatility
     return (AR - RISK_FREE) / ANNVOL;
