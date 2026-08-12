@@ -40,6 +40,7 @@ env/
 
 # ---- VS Code ----
 .vscode/
+.history/
 
 # ---- OS junk ----
 .DS_Store

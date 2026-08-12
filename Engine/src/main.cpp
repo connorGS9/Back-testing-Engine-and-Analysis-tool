@@ -5,38 +5,59 @@
 #include "Writer.h"
 #include "Metrics.h"
 #include <cmath>
+#include <memory>                      
+#include "strategies/BuyAndHold.h"
+#include "strategies/MovingAverageCrossover.h"
+#include <iomanip>
 
-int main() {
-      PriceSeries series = loadCsv("/mnt/c/Users/conno/OneDrive/Desktop/Back-testing-Engine-and-Analysis-tool/data/AAPL.csv");
+int main(int argc, char** argv) {
 
-      std::cout<< "Rows loaded: " << series.size() << "\n";
+    if (argc < 3) { // Improper number of arguments 
+        std::cerr << "Usage: engine <TICKER> <strategy> [params...]\n";
+        std::cerr << "  e.g. engine AAPL buyhold\n";
+        std::cerr << "       engine TSLA crossover 50 200\n";
+        return 1;   // error exit
+    }
 
-      std::cout << "First: " << series.dates[0] << " O:" << series.open[0]
-          << " H:" << series.high[0] << " L:" << series.low[0]
-          << " C:" << series.close[0] << " V:" << series.volume[0] << "\n";
+    std::string ticker = argv[1];
+    std::string strategyName = argv[2];
 
-      std::size_t last = series.size() - 1;
-      std::cout << "Last:  " << series.dates[last] << " O:" << series.open[last]
-          << " C:" << series.close[last] << " V:" << series.volume[last] << "\n";
+    PriceSeries series = loadCsv("../data/" + ticker + ".csv");
+    // Hardcoded if else for now when there are > 4 strategies we will upgrade to factory method pattern to create the correct strategy object based on the string name of the strategy
+    std::unique_ptr<Strategy> strategy;
+    if (strategyName == "buyhold") {
+        strategy = std::make_unique<BuyAndHold>();
+    } else if (strategyName == "crossover") {
+        if (argc < 5) {
+            std::cerr << "Usage: engine <TICKER> crossover <short> <long>\n";
+            return 1;
+        }
+        int shortMa = std::stoi(argv[3]);
+        int longMa = std::stoi(argv[4]);
+        std::cout << "Running crossover " << shortMa << "/" << longMa << '\n';
+        strategy = std::make_unique<MovingAverageCrossover>(shortMa, longMa);
+    } else {
+        std::cerr << "Unknown strategy: " << strategyName << "\n";
+        return 1;
+    }
 
+    EquityCurve eq = simulate(series, *strategy);      
+    Metrics m = computeMetrics(eq);
 
-      EquityCurve eq = simulate(series);
+    std::cout << std::fixed << std::setprecision(2);
+    std::cout << "\n=== Backtest Results ===\n";
+    std::cout << "Days simulated:    " << eq.equity.size() << "\n";
+    std::cout << "Starting equity:   " << eq.equity[0] << "\n";
+    std::cout << "Final equity:      " << eq.equity[eq.equity.size() - 1] << "\n";
+    std::cout << "\n--- Metrics ---\n";
+    std::cout << "Total return:      " << m.totalReturn * 100.0      << "%\n";
+    std::cout << "Annualized return: " << m.annualizedReturn * 100.0 << "%\n";
+    std::cout << "Volatility (ann):  " << m.volatility * 100.0       << "%\n";
+    std::cout << "Sharpe:            " << m.sharpe                    << "\n";
+    std::cout << "Sortino:           " << m.sortino                  << "\n";
+    std::cout << "Max drawdown:      " << m.maxDrawdown * 100.0       << "%\n";
 
-      std::cout << "Day 0 Equity: " << eq.equity[0] <<"\n";
-      std::cout << "Final day of equity: " << eq.equity[eq.equity.size()-1] << "\n";
-
-      writeCsv(eq, "/mnt/c/Users/conno/OneDrive/Desktop/Back-testing-Engine-and-Analysis-tool/data/SIMULATION_OPT.csv");
-      
-      std::size_t initial = eq.equity[0];
-      std::size_t end = eq.equity[eq.equity.size() - 1];
-      double calcEquity = totalReturn(eq);
-      std::cout << "Day 0 equity : " << initial << " Ending equity: " << end << "\n"<< " Equity percent gain from method: " << calcEquity * 100.0 << "%" << "\n";
-      double vol = volatility(eq);
-      std::cout << "Daily volatility: " << vol << "\n" << "Annual volatility: " << vol * sqrt(252.0) << "\n";
-   
-      std::cout << "Sharpe evaluation: " << sharpe(eq) << "\n";
-
-      double maxDraw = maxDrawdown(eq);
-      std::cout << "Maximum draw: " << maxDraw * 100 << "%" << "\n";
-      return 0;
+    // Write the equity curve to a CSV file for analysis in Jupiter Notebook and Python
+    //writeCsv(eq, "output/" + ticker + "_" + strategyName + ".csv");
+    return 0;
 }
