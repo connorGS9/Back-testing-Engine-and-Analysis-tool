@@ -58,6 +58,7 @@ int main(int argc, char** argv) {
     std::cout << "Max drawdown:      " << m.maxDrawdown * 100.0       << "%\n";
 
     // Write the equity curve to a CSV file for analysis in Jupiter Notebook and Python
-    //writeCsv(eq, "output/" + ticker + "_" + strategyName + ".csv");
+    std::string outPath = "../output/" + ticker + "_" + strategy->name() + ".csv";
+    writeCsv(eq, outPath);
     return 0;
 }
