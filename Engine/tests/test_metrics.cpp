@@ -17,7 +17,7 @@ TEST_CASE("Volatility correctly computes standard deviation of daily returns") {
     eq.dates       = {"d0", "d1", "d2", "d3", "d4"};
     eq.equity      = {100.0, 120.0, 150.0, 180.0, 200.0};   // initial 100, final 200
     eq.dailyReturn = {0.0, 0.10, -0.10, 0.10, -0.10};  // day-over-day, day0 is 0
-    double expected = 0.1 * sqrt(252.0);
+    double expected = 0.1 * std::sqrt(252.0);
     REQUIRE(volatility(eq) == Catch::Approx(expected));
 }
 
