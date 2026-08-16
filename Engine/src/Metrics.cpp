@@ -22,7 +22,7 @@ double totalReturn(const EquityCurve& ec) {
     }
     const double initial = ec.equity[0];
     const double end = ec.equity[ec.equity.size() - 1];
-    const double total = (end - initial) / initial;
+    const double total = (end - initial) / initial; // divide by inital 
     return total;
 }
 
@@ -41,8 +41,11 @@ double volatility(const EquityCurve& ec) {
     // V = sqrt(variance)  variance = average of (dailyReturn - mean)^2 over all i
     double mean = 0.0;
     double sumDailyReturns = 0.0;
-    const std::size_t n = ec.dailyReturn.size() - 1;
-    if (n == 0) return 0.0;
+    if (ec.dailyReturn.size() <= 1) {
+        return 0.0; //Guard against empty curve and single day since volatility needs >= 2 days. Return 0.0 for both cases since no volatility can be computed with no data or only one data point
+    }
+
+    const std::size_t n = ec.dailyReturn.size() - 1; //Underflows to 16 quintillion if size is 0 (empty), so we check for empty curve above. But it actually then overflows back to 0 in the loop where we loop up to n + 1
     for (std::size_t i = 1; i < n + 1; i++) {
         sumDailyReturns += ec.dailyReturn[i];
     }
@@ -78,6 +81,9 @@ double maxDrawdown(const EquityCurve& ec) {
 double sortino(const EquityCurve& ec) {
     double mean = 0.0;
     double negativeReturnSum = 0.0;
+    if (ec.dailyReturn.size() <= 1) {
+        return 0.0; //Guard against empty curve and single day since sortino needs >= 2 days. Return 0.0 for both cases since no sortino can be computed with no data or only one data point
+    }
     const std::size_t n = ec.dailyReturn.size() - 1;
     if (n == 0) return 0.0;
 
