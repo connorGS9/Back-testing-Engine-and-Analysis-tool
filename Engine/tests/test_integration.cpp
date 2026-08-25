@@ -22,6 +22,22 @@ TEST_CASE("Integration: buy-and-hold return equals the asset's price return") {
     REQUIRE(totalReturn(eq) == Catch::Approx(1.0));  // doubling = 100% return
 }
 
+TEST_CASE("Integration: transaction cost is charged on traded notional") {
+    PriceSeries ps;
+    ps.dates = {"d0"};
+    ps.open = {100.0};
+    ps.high = {100.0};
+    ps.low = {100.0};
+    ps.close = {100.0};
+    ps.volume = {1000};
+
+    BuyAndHold strat;
+    EquityCurve eq = simulate(ps, strat, 0.01);
+
+    // 1,000 shares * $100 * 1% = $1,000 cost.
+    REQUIRE(eq.equity.back() == Catch::Approx(99000.0));
+}
+
 TEST_CASE("Integration: Crossover never looks ahead and returns correct total return") {
     PriceSeries base;
     base.dates  = {"d0","d1","d2","d3","d4"};

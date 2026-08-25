@@ -1,21 +1,25 @@
 #include <vector>
 #include <string>
+#include <cmath>
 #include "Simulator.h"
 #include "EquityCurve.h"
 
-EquityCurve simulate(const PriceSeries& series, Strategy& strategy) {
+EquityCurve simulate(const PriceSeries& series, Strategy& strategy, double costRate) {
     Portfolio p { 0.0, 100000.0 };
     EquityCurve eq;
 
     for (std::size_t i = 0; i < series.size(); i++) {
-        // DECIDE — recalculated every iteration
+        // DECIDE, recalculated every iteration
         double target = strategy.onBar(series, i); // Get the specific strategy 
 
-        // ACT — move the portfolio toward that target
-        double equityNow = p.cash + p.shares * series.close[i];
-        double targetShares = (target * equityNow) / series.close[i];
+        // ACT, move the portfolio toward that target
+        double equityNow = p.cash + p.shares * series.close[i]; // Current available equity
+        double targetShares = (target * equityNow) / series.close[i]; // Target number of shares
+        double sharesTraded = targetShares - p.shares; // Number of shares we want to buy or sell to hit the target position
+        double cost = costRate * std::abs(sharesTraded * series.close[i]); // Cost to put trade in
+
         p.shares = targetShares;
-        p.cash = equityNow - targetShares * series.close[i];
+        p.cash = equityNow - targetShares * series.close[i] - cost; // Available cash = current equity - (totalShares * close) - cost to make trade
 
         // MARK & RECORD
         double equityToday = p.cash + p.shares * series.close[i];
