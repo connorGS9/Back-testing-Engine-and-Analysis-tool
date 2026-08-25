@@ -9,6 +9,8 @@
 #include "strategies/BuyAndHold.h"
 #include "strategies/MovingAverageCrossover.h"
 #include <iomanip>
+#include "AssetConfig.h"
+#include "AssetRegistry.h"
 
 int main(int argc, char** argv) {
 
@@ -21,6 +23,8 @@ int main(int argc, char** argv) {
 
     std::string ticker = argv[1];
     std::string strategyName = argv[2];
+
+    AssetConfig assetConfig = makeAssetConfig(ticker); // Create an asset config for the given ticker
 
     PriceSeries series = loadCsv("../data/" + ticker + ".csv");
     // Hardcoded if else for now when there are > 4 strategies we will upgrade to factory method pattern to create the correct strategy object based on the string name of the strategy
@@ -45,7 +49,7 @@ int main(int argc, char** argv) {
     // Example: use a higher rate for illiquid penny/OTC stocks.
     double costRate = 0.001; // 0.1% cost rate assumption for now
     EquityCurve eq = simulate(series, *strategy, costRate);
-    Metrics m = computeMetrics(eq);
+    Metrics m = computeMetrics(eq, assetConfig);
 
     std::cout << std::fixed << std::setprecision(2);
     std::cout << "\n=== Backtest Results ===\n";
