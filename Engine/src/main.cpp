@@ -41,7 +41,10 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    EquityCurve eq = simulate(series, *strategy);      
+    // TODO: select this rate from the ticker's stock type/exchange metadata.
+    // Example: use a higher rate for illiquid penny/OTC stocks.
+    double costRate = 0.001; // 0.1% cost rate assumption for now
+    EquityCurve eq = simulate(series, *strategy, costRate);
     Metrics m = computeMetrics(eq);
 
     std::cout << std::fixed << std::setprecision(2);
