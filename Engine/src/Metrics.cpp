@@ -4,16 +4,17 @@
 #include "Metrics.h"
 #include <cmath>
 #include <algorithm>
+#include "AssetConfig.h"
 
 
-Metrics computeMetrics(const EquityCurve& ec) {
+Metrics computeMetrics(const EquityCurve& ec, const AssetConfig& assetConfig) {
     Metrics m;
     m.totalReturn = totalReturn(ec);
-    m.annualizedReturn = annualizedReturn(ec);
-    m.volatility = volatility(ec);
-    m.sharpe = sharpe(ec);
+    m.annualizedReturn = annualizedReturn(ec, assetConfig);
+    m.volatility = volatility(ec, assetConfig);
+    m.sharpe = sharpe(ec, assetConfig);
     m.maxDrawdown = maxDrawdown(ec);
-    m.sortino = sortino(ec);
+    m.sortino = sortino(ec, assetConfig);
     return m;
 }
 double totalReturn(const EquityCurve& ec) {
@@ -26,17 +27,17 @@ double totalReturn(const EquityCurve& ec) {
     return total;
 }
 
-double annualizedReturn(const EquityCurve& ec) {
+double annualizedReturn(const EquityCurve& ec, const AssetConfig& assetConfig) {
     // M = (1 - r)^N  Where r is the annual return and N is the length (years), and M is the growth factor (10.xx for Apple)
     // r = m^(1/n) - 1
     //annual return is really just a geometric average for "average yearly return" if you go +100% one year and -50% the next annual return will be 0% even though changes did occur to the total money at certain times
-    const double N = ec.equity.size() / 252.0; //Trading days -> years (252 trading days per year avg)
+    const double N = ec.equity.size() / assetConfig.tradingDaysPerYear; //Trading days -> years (252 trading days per year avg)
     const double M = ec.equity[ec.equity.size()-1] / ec.equity[0];
     const double annualReturn = std::pow(M, 1.0 / N) - 1;
     return annualReturn;
 }
 
-double volatility(const EquityCurve& ec) {
+double volatility(const EquityCurve& ec, const AssetConfig& assetConfig) {
     // Volatility is how far a typical day lands from the average day on average both positively and negatively
     // V = sqrt(variance)  variance = average of (dailyReturn - mean)^2 over all i
     double mean = 0.0;
@@ -56,14 +57,14 @@ double volatility(const EquityCurve& ec) {
         variance += d * d;
     }
     variance /= n;
-    return std::sqrt(variance) * std::sqrt(252.0);
+    return std::sqrt(variance) * std::sqrt(assetConfig.tradingDaysPerYear);
 }
 
-double sharpe(const EquityCurve& ec) {
+double sharpe(const EquityCurve& ec, const AssetConfig& assetConfig) {
     // Sharpe returns annualReturn / volatility "How much return per unit of risk taken"
     constexpr double RISK_FREE = 0.04; // 4% return on something very safe like short term t-bills, used to make the sharpe evaluation more realistic if we returned 26% annualy, we could have gotten 4% "risk free" so we really mesure the return to be 22%
-    const double AR = annualizedReturn(ec);
-    const double ANNVOL = volatility(ec); // Daily volatility * sqrt(# tradingDays) = annual volatility
+    const double AR = annualizedReturn(ec, assetConfig);
+    const double ANNVOL = volatility(ec, assetConfig); // Daily volatility * sqrt(# tradingDays) = annual volatility
     return (AR - RISK_FREE) / ANNVOL;
 }
 
@@ -78,7 +79,7 @@ double maxDrawdown(const EquityCurve& ec) {
     return maxDraw;
 }
 
-double sortino(const EquityCurve& ec) {
+double sortino(const EquityCurve& ec, const AssetConfig& assetConfig) {
     double mean = 0.0;
     double negativeReturnSum = 0.0;
     if (ec.dailyReturn.size() <= 1) {
@@ -94,10 +95,10 @@ double sortino(const EquityCurve& ec) {
     }
 
     const double downsideDev = std::sqrt(negativeReturnSum / n);
-    const double annualizedDownside = downsideDev * std::sqrt(252.0);
+    const double annualizedDownside = downsideDev * std::sqrt(assetConfig.tradingDaysPerYear);
 
     const double riskFree = 0.04;
-    const double annReturn = annualizedReturn(ec);
+    const double annReturn = annualizedReturn(ec, assetConfig);
 
     if (annualizedDownside == 0.0) return 0.0;   // guard
     return (annReturn - riskFree) / annualizedDownside;
