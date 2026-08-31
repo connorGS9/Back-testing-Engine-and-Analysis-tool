@@ -11,6 +11,9 @@
 #include <iomanip>
 #include "AssetConfig.h"
 #include "AssetRegistry.h"
+#include <unordered_map>
+#include <functional>
+#include <string>
 
 int main(int argc, char** argv) {
 
@@ -28,23 +31,30 @@ int main(int argc, char** argv) {
 
     PriceSeries series = loadCsv("../data/" + ticker + ".csv");
     // Hardcoded if else for now when there are > 4 strategies we will upgrade to factory method pattern to create the correct strategy object based on the string name of the strategy
-    std::unique_ptr<Strategy> strategy;
-    if (strategyName == "buyhold") {
-        strategy = std::make_unique<BuyAndHold>();
-    } else if (strategyName == "crossover") {
+    std::unordered_map<std::string, std::function<std::unique_ptr<Strategy>(int, char**)>> registry;
+    registry["buyhold"] = [](int, char**) -> std::unique_ptr<Strategy> { return std::make_unique<BuyAndHold>(); };
+    registry["crossover"] = [](int argc, char** argv) -> std::unique_ptr<Strategy> {
         if (argc < 5) {
             std::cerr << "Usage: engine <TICKER> crossover <short> <long>\n";
-            return 1;
+            return std::unique_ptr<Strategy>(nullptr);
         }
         int shortMa = std::stoi(argv[3]);
         int longMa = std::stoi(argv[4]);
-        std::cout << "Running crossover " << shortMa << "/" << longMa << '\n';
-        strategy = std::make_unique<MovingAverageCrossover>(shortMa, longMa);
-    } else {
-        std::cerr << "Unknown strategy: " << strategyName << "\n";
-        return 1;
-    }
+        return std::make_unique<MovingAverageCrossover>(shortMa, longMa);
+    };
 
+    auto it = registry.find(strategyName); // Map iterator to find the strategy name in the registry
+    std::unique_ptr<Strategy> strategy;
+    if (it == registry.end()) { // strategy name does not exist in map
+        std::cerr << "Unknown strategy: " << strategyName << "\n";
+        return 1; // error exit
+    } else {
+        strategy = it->second(argc, argv); // the strategy is created and stored in a unique pointer to ensure proper memory management and avoid memory leaks. The unique pointer will automatically delete the strategy object when it goes out of scope, ensuring that resources are properly released.
+    }
+    if (!strategy) { // strategy creation failed due to invalid parameters
+        return 1; // error exit
+    }
+    
     // TODO: select this rate from the ticker's stock type/exchange metadata.
     // Example: use a higher rate for illiquid penny/OTC stocks.
     double costRate = 0.001; // 0.1% cost rate assumption for now
