@@ -8,6 +8,7 @@
 #include <memory>                      
 #include "strategies/BuyAndHold.h"
 #include "strategies/MovingAverageCrossover.h"
+#include "strategies/MeanReversion.h"
 #include <iomanip>
 #include "AssetConfig.h"
 #include "AssetRegistry.h"
@@ -42,6 +43,14 @@ int main(int argc, char** argv) {
         int longMa = std::stoi(argv[4]);
         return std::make_unique<MovingAverageCrossover>(shortMa, longMa);
     };
+    registry["meanrev"] = [](int argc, char** argv) -> std::unique_ptr<Strategy> { 
+        if (argc < 5) {
+            std::cerr << "Usage: engine <TICKER> meanrev <window> <threshold of std_deviations away formm mean price (e.g. 1, 2)>\n";
+        }
+        int window = std::stoi(argv[3]);
+        int thresh = std::stoi(argv[4]);
+        return std::make_unique<MeanReversion>(window, thresh);
+    };
 
     auto it = registry.find(strategyName); // Map iterator to find the strategy name in the registry
     std::unique_ptr<Strategy> strategy;
@@ -54,7 +63,7 @@ int main(int argc, char** argv) {
     if (!strategy) { // strategy creation failed due to invalid parameters
         return 1; // error exit
     }
-    
+
     // TODO: select this rate from the ticker's stock type/exchange metadata.
     // Example: use a higher rate for illiquid penny/OTC stocks.
     double costRate = 0.001; // 0.1% cost rate assumption for now
